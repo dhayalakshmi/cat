@@ -1,5 +1,5 @@
 FROM python:3.10-slim
 WORKDIR /app
-COPY factorial.py .
-EXPOSE 8000
-CMD ["python", "factorial.py"]
+COPY Greatest.py .
+EXPOSE 5000
+CMD ["python", "Greatest.py"]
