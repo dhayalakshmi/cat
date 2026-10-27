@@ -1,0 +1,7 @@
+# Set 8: ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: java-app-config
+data:
+  APP_MESSAGE: "Hello from ConfigMap!"

@@ -1,0 +1,28 @@
+# Set 14: deliberate faults to troubleshoot
+# Fault 1: wrong image tag  -> ImagePullBackOff
+# Fault 2: wrong probe path -> pod Running but never Ready
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-app-faulty
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: java-app-faulty
+  template:
+    metadata:
+      labels:
+        app: java-app-faulty
+    spec:
+      containers:
+        - name: java-app
+          image: admin/java-k8s-app:does-not-exist
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5

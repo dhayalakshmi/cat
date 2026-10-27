@@ -1,0 +1,39 @@
+# Sets 8, 9, 10: ConfigMap + PVC + readiness probe in one Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: java-app
+  template:
+    metadata:
+      labels:
+        app: java-app
+    spec:
+      containers:
+        - name: java-app
+          image: admin/java-k8s-app:v1
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: java-app-config
+          env:
+            - name: HISTORY_FILE
+              value: /data/history.txt
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: java-app-pvc

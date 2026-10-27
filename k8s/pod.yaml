@@ -1,0 +1,13 @@
+# Set 3: Pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: java-app-pod
+  labels:
+    app: java-app
+spec:
+  containers:
+    - name: java-app
+      image: admin/java-k8s-app:v1
+      ports:
+        - containerPort: 8080
