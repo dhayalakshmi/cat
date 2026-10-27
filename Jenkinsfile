@@ -1,62 +1,23 @@
 pipeline {
-    agent any
-
-    tools {
-        maven 'Maven3'
-        jdk   'JDK17'
+  agent any
+  environment {
+    KUBECONFIG = credentials('kubeconfig')
+    KUBECTL = '"C:\\Users\\Admin\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\kubectl.exe"'
+    DOCKER  = '"C:\\Users\\Admin\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe"'
+    IMAGE = 'java-k8s-app'
+  }
+  stages {
+    stage('Checkout') { steps { checkout scm } }
+    stage('Build Image') {
+      steps { bat '%DOCKER% build -t %IMAGE%:%BUILD_NUMBER% .' }
     }
-
-    environment {
-        DOCKER_USER = 'admin'          // your Docker Hub username
-        IMAGE       = "${DOCKER_USER}/java-k8s-app"
-        TAG         = "v${BUILD_NUMBER}"
+    stage('Deploy') {
+      steps {
+        bat '%KUBECTL% apply -f k8s\\configmap.yaml'
+        bat '%KUBECTL% apply -f k8s\\deployment-full.yaml'
+        bat '%KUBECTL% apply -f k8s\\service.yaml'
+        bat '%KUBECTL% set image deployment/java-app java-app=%IMAGE%:%BUILD_NUMBER%'
+      }
     }
-
-    stages {
-        stage('Checkout') {
-            steps { checkout scm }
-        }
-
-        stage('Build & Test') {
-            steps { sh 'mvn clean test' }
-            post {
-                always { junit 'target/surefire-reports/*.xml' }
-            }
-        }
-
-        stage('Docker Build') {
-            steps { sh 'docker build -t $IMAGE:$TAG -t $IMAGE:latest .' }
-        }
-
-        stage('Docker Push') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
-                        usernameVariable: 'U', passwordVariable: 'P')]) {
-                    sh '''
-                        echo "$P" | docker login -u "$U" --password-stdin
-                        docker push $IMAGE:$TAG
-                        docker push $IMAGE:latest
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                withCredentials([file(credentialsId: 'kubeconfig-cred', variable: 'KUBECONFIG')]) {
-                    sh '''
-                        sed "s|admin/java-k8s-app:v1|$IMAGE:$TAG|" k8s/deployment.yaml | kubectl apply -f -
-                        kubectl apply -f k8s/service.yaml
-                        kubectl rollout status deployment/java-app --timeout=120s
-                        kubectl get pods,svc
-                    '''
-                }
-            }
-        }
-    }
-
-    post {
-        success { echo 'Pipeline succeeded' }
-        failure { echo 'Pipeline failed' }
-    }
+  }
 }
